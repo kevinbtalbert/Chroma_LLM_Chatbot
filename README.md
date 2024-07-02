@@ -1,1 +1,1 @@
-# Chroma_LLM_Chatbot
+# Chroma LLM Chatbot
