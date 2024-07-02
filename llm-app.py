@@ -25,34 +25,34 @@ COLLECTION_NAME = config['COLLECTION_NAME']
 CHROMA_DATA_FOLDER = config['CHROMA_DATA_FOLDER']
 HOST = config['HOST']
 APP_PORT = int(config['APP_PORT'])
+HF_ACCESS_TOKEN = config['HF_ACCESS_TOKEN']
 
 # Check if GPU is available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
+# Clear GPU memory
+torch.cuda.empty_cache()
+
 # Connect to local Chroma data
 chroma_client = chromadb.PersistentClient(path=CHROMA_DATA_FOLDER)
 EMBEDDING_FUNCTION = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=EMBEDDING_MODEL_NAME)
 
-print("initialising Chroma DB connection...")
+print("Initializing Chroma DB connection...")
 
-print(f"Getting '{COLLECTION_NAME}' as object...")
 try:
-    chroma_client.get_collection(name=COLLECTION_NAME, embedding_function=EMBEDDING_FUNCTION)
-    print("Success")
     collection = chroma_client.get_collection(name=COLLECTION_NAME, embedding_function=EMBEDDING_FUNCTION)
+    print("Collection found.")
 except:
     print("Creating new collection...")
     collection = chroma_client.create_collection(name=COLLECTION_NAME, embedding_function=EMBEDDING_FUNCTION)
-    print("Success")
+    print("Collection created.")
 
 # Get latest statistics from index
 current_collection_stats = collection.count()
 print('Total number of embeddings in Chroma DB index is ' + str(current_collection_stats))
 
-# Quantization
-# Here quantization is setup to use "Normal Float 4" data type for weights. 
-# This way each weight in the model will take up 4 bits of memory. 
+# Quantization configuration
 compute_dtype = getattr(torch, "float16")
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
@@ -61,20 +61,31 @@ bnb_config = BitsAndBytesConfig(
     bnb_4bit_use_double_quant=True,
 )
 
-# Create a model object with above parameters
-tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL_NAME)
-model = AutoModelForCausalLM.from_pretrained(LLM_MODEL_NAME, config=bnb_config)
-model.to(device)  # Move the model to the device (GPU if available)
+# Load model with model offloading
+print("Loading model...")
+with init_empty_weights():
+    model = AutoModelForCausalLM.from_pretrained(LLM_MODEL_NAME, quantization_config=bnb_config, token=HF_ACCESS_TOKEN)
+print(f"Model loaded on device: {next(model.parameters()).device}")
+
+# Enable gradient checkpointing
+model.gradient_checkpointing_enable()
+
+# Load the tokenizer
+tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL_NAME, trust_remote_code=True, token=HF_ACCESS_TOKEN)
+tokenizer.pad_token = tokenizer.eos_token
 
 # Define the inference function
 def generate_response(prompt, max_new_tokens=100, temperature=0.7):
     inputs = tokenizer(prompt, return_tensors="pt").to(device)  # Move inputs to device
-    output = model.generate(
-        inputs["input_ids"],
-        max_new_tokens=max_new_tokens,
-        temperature=temperature,
-        do_sample=True
-    )
+    print(f"Inputs loaded on device: {inputs['input_ids'].device}")
+    with torch.cuda.amp.autocast():
+        output = model.generate(
+            inputs["input_ids"],
+            attention_mask=inputs["attention_mask"],
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            do_sample=True
+        )
     return tokenizer.decode(output[0], skip_special_tokens=True)
 
 def main():
@@ -105,11 +116,14 @@ def main():
 def get_responses(message, history, model, temperature, token_count, vector_db):
     if model == "Local Mistral 7B" and vector_db == "Chroma":
         context_chunk, metadata = get_nearest_chunk_from_chroma_vectordb(collection, message)
-        response = generate_response(f"{message} {context_chunk}", max_new_tokens=int(token_count), temperature=float(temperature))
-        response = f"{response}\n\nMetadata: {metadata}"
-        for i in range(len(response)):
+        # Format the prompt to include context but only show the answer
+        prompt = f"Context: {context_chunk}\n\nQuestion: {message}\n\nAnswer:"
+        response = generate_response(prompt, max_new_tokens=int(token_count), temperature=float(temperature))
+        final_response = response.split("Answer:")[-1].strip()
+        final_response += f"\n\nMetadata: {metadata}"
+        for i in range(len(final_response)):
             time.sleep(0.02)
-            yield response[:i+1]
+            yield final_response[:i+1]
 
 def get_nearest_chunk_from_chroma_vectordb(collection, question):
     response = collection.query(
