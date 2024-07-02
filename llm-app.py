@@ -26,6 +26,10 @@ CHROMA_DATA_FOLDER = config['CHROMA_DATA_FOLDER']
 HOST = config['HOST']
 APP_PORT = int(config['APP_PORT'])
 
+# Check if GPU is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
 # Connect to local Chroma data
 chroma_client = chromadb.PersistentClient(path=CHROMA_DATA_FOLDER)
 EMBEDDING_FUNCTION = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=EMBEDDING_MODEL_NAME)
@@ -60,10 +64,11 @@ bnb_config = BitsAndBytesConfig(
 # Create a model object with above parameters
 tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL_NAME)
 model = AutoModelForCausalLM.from_pretrained(LLM_MODEL_NAME, config=bnb_config)
+model.to(device)  # Move the model to the device (GPU if available)
 
 # Define the inference function
 def generate_response(prompt, max_new_tokens=100, temperature=0.7):
-    inputs = tokenizer(prompt, return_tensors="pt")
+    inputs = tokenizer(prompt, return_tensors="pt").to(device)  # Move inputs to device
     output = model.generate(
         inputs["input_ids"],
         max_new_tokens=max_new_tokens,
