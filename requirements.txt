@@ -1,0 +1,10 @@
+gradio
+chromadb
+sentence-transformers
+requests
+torch
+bitsandbytes
+transformers
+huggingface_hub
+
+pysqlite3-binary ## Install this after running setup-chromadb.py
