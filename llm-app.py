@@ -45,9 +45,8 @@ try:
     collection = chroma_client.get_collection(name=COLLECTION_NAME, embedding_function=EMBEDDING_FUNCTION)
     print("Collection found.")
 except:
-    print("Creating new collection...")
-    collection = chroma_client.create_collection(name=COLLECTION_NAME, embedding_function=EMBEDDING_FUNCTION)
-    print("Collection created.")
+    print("Collection not found... Exiting")
+    exit()
 
 # Get latest statistics from index
 current_collection_stats = collection.count()

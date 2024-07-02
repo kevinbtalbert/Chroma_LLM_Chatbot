@@ -49,6 +49,8 @@ Confirm version/alias with `python --version` or `python3.11 --version`
 
 7. Set `HF_ACCESS_TOKEN` in `config.ini` with a Hugging Face API Key with at minimum Read permissions to the `mistralai/Mistral-7B-Instruct-v0.2` LLM model.
 
+8. Update the `CHROMA_DATA_FOLDER` with a pointer to the local folder with the Chroma data vector store as well as the `COLLECTION_NAME` variable pointing to the collection to be referenced.
+
 ## Launch Application
 
 Run `python llm-app.py` to launch the application from within the git directory downloaded. Adjust any necessary configs in `config.ini` file in project directory.
