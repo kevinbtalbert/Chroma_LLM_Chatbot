@@ -7,6 +7,7 @@ import torch
 import chromadb
 from chromadb.utils import embedding_functions
 import time
+from accelerate import init_empty_weights
 
 def read_config(file_path):
     config = configparser.ConfigParser()

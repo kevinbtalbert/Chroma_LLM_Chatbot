@@ -6,5 +6,6 @@ torch
 bitsandbytes
 transformers
 huggingface_hub
+accelerate
 
 pysqlite3-binary ## Install this after running setup-chromadb.py
