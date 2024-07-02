@@ -53,6 +53,28 @@ Confirm version/alias with `python --version` or `python3.11 --version`
 
 Run `python llm-app.py` to launch the application from within the git directory downloaded. Adjust any necessary configs in `config.ini` file in project directory.
 
+Output:
+
+```
+(HOL_VENV) [ec2-user@ip-10-10-2-109 Chroma_LLM_Chatbot]$ python llm-app.py 
+Using device: cuda
+Initializing Chroma DB connection...
+Collection found.
+Total number of embeddings in Chroma DB index is 0
+Loading model...
+`low_cpu_mem_usage` was None, now set to True since model is quantized.
+Loading checkpoint shards: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 3/3 [00:05<00:00,  1.97s/it]
+Model loaded on device: cuda:0
+Configuring gradio app
+Launching gradio app
+Running on local URL:  http://127.0.0.1:5000
+Running on public URL: https://6e637bc8dc34dd1fab.gradio.live
+
+This share link expires in 72 hours. For free permanent hosting and GPU upgrades, run `gradio deploy` from Terminal to deploy to Spaces (https://huggingface.co/spaces)
+
+
+```
+
 
 Verify CUDA consumption by model:
 
