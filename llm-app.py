@@ -6,6 +6,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 import torch
 import chromadb
 from chromadb.utils import embedding_functions
+from datetime import time
 
 def read_config(file_path):
     config = configparser.ConfigParser()
@@ -91,7 +92,7 @@ def main():
     )
 
     print("Launching gradio app")
-    demo.launch(share=True, enable_queue=True, show_error=True, server_name='127.0.0.1', server_port=int(os.getenv('CDSW_READONLY_PORT')))
+    demo.launch(share=True, enable_queue=True, show_error=True, server_name=config['HOST'], server_port=int(config['APP_PORT']))
     print("Gradio app ready")
 
 def get_responses(message, history, model, temperature, token_count, vector_db):
