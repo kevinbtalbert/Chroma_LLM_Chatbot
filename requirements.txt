@@ -1,3 +1,4 @@
+## Requirements for Core Project
 gradio
 chromadb
 sentence-transformers
@@ -9,3 +10,7 @@ huggingface_hub
 accelerate
 
 pysqlite3-binary ## Install this after running setup-chromadb.py
+
+
+## Requirements for Loading to Chroma DB / Querying Chroma DB (Optional)
+beautifulsoup4
